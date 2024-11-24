@@ -1,0 +1,11 @@
+config:
+  gcp:project: email-assistant-dev
+  gcp:region: australia-southeast1
+  assistant:watch-account: YOUR_EMAIL@example.com
+  assistant:filter-action: "include"
+  assistant:root-folder: ""
+  assistant:history-file-name: "history.json"
+  assistant:emails-folder: "emails/"
+  assistant:debug-folder: "debug/"
+  assistant:scopes: "https://www.googleapis.com/auth/gmail.readonly"
+  assistant:label-Ids: UNREAD

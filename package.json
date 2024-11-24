@@ -1,0 +1,30 @@
+{
+  "name": "email-assistant",
+  "main": "index.ts",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "cloud_functions/*"
+  ],
+  "devDependencies": {
+    "@google-cloud/functions-framework": "^3.4.2",
+    "@google-cloud/storage": "^7.14.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^18.19.64",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "^4.9.0",
+    "@google-cloud/secret-manager": "^5.6.0",
+    
+    "@pulumi/gcp": "^8.9.2",
+    "@pulumi/pulumi": "^3.139.0",
+    "googleapis": "^144.0.0"
+  },
+  "scripts": {
+    "test": "jest --config jest.config.ts"
+  }
+}

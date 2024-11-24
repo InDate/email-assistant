@@ -1,0 +1,50 @@
+# Dependencies
+/node_modules/
+/cloud_functions/node_modules/
+/bin/
+
+# Build outputs
+/dist/
+/build/
+/.pulumi/
+/.build/
+/cloud_functions/dist/
+/cloud_functions/build/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+/coverage/
+
+# Pulumi
+Pulumi.*.yaml
+!Pulumi.yaml
+!Pulumi.dev.yaml.example
+
+# Secrets and keys
+*.pem
+*.key
+*.p12
+credentials.json
