@@ -1,5 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as gcp from "@pulumi/gcp";
+import * as fs from "fs-extra";
+import * as path from "path";
 import { asset } from "@pulumi/pulumi";
 
 // Load the configuration
@@ -89,10 +91,29 @@ const bucket = new gcp.storage.Bucket("gmailWatchSourceBucket", {
     uniformBucketLevelAccess: true
 });
 
+// Create a temporary directory for the cloud function source without node_modules
+const tmpDir = !pulumi.runtime.isDryRun() 
+    ? (() => {
+        const dir = fs.mkdtempSync(path.join("/tmp", "cloud-function-"));
+        try {
+            // Copy only the necessary files
+            fs.copySync("./cloud_functions/src", path.join(dir, "src"));
+            fs.copyFileSync("./cloud_functions/package.json", path.join(dir, "package.json"));
+            fs.copyFileSync("./cloud_functions/package-lock.json", path.join(dir, "package-lock.json"));
+            fs.copyFileSync("./cloud_functions/tsconfig.txt", path.join(dir, "tsconfig.json"));
+            return dir;
+        } catch (error) {
+            // Clean up on error
+            fs.removeSync(dir);
+            throw error;
+        }
+    })()
+    : "./cloud_functions"; // During preview, just point to the source directory
+
 const functionSource = new gcp.storage.BucketObject("gmailCloudFunction", {
     bucket: bucket.name,
-    source: new asset.FileArchive("./cloud_functions/")
-});
+    source: new asset.FileArchive(tmpDir)
+})
 
 const contentBucket = new gcp.storage.Bucket("assistantContentBucket", {
     name: `${project}-content`,

@@ -57,5 +57,5 @@ MIT
 ## Useful Commands
 Publish a Topic to pubsub to test watch function
 ```bash
- gcloud pubsub topics publish gmail-watch-topic --message="Hello, Pub/Sub" --project <project_name>
+ gcloud pubsub topics publish email-assistant-watch-topic --message="Hello, Pub/Sub" --project <project_name>
 ```

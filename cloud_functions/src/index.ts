@@ -70,6 +70,12 @@ const initConfig = async (): Promise<EnvConfig> => {
     return config;
 };
 
+interface MessageObject {
+    emailId?: string;
+    historyId: string;
+    timestamp: string;
+}
+
 /**
  * A Google Cloud Function with an Pub/Sub trigger signature.
  *
@@ -86,9 +92,9 @@ export const ProcessMessage = async (event: Message, context: Context) => {
         const message = event.data.toString('utf-8');
         console.debug('Raw message received:', message);
 
-        let msgObj;
+        let msgObj: MessageObject;
         try {
-            msgObj = JSON.parse(message);
+            msgObj = JSON.parse(message) as MessageObject;
         } catch (error) {
             const parseError = error as Error;
             console.error('Failed to parse message:', message);
@@ -191,7 +197,7 @@ export const StartWatch = async (message: any) => {
  * @param {String} prevHistoryId Previous history id which will be queried for the latest messages
  * @param {Object} msgObj The current message object containing the new history id
  */
-async function moveForward(prevHistoryId: string, msgObj: string) {
+async function moveForward(prevHistoryId: string, msgObj: MessageObject) {
     storageService.saveFileContent(config.ROOT_FOLDER + config.HISTORY_FILE_NAME, JSON.stringify(msgObj));
     await fetchMessageFromHistory(prevHistoryId);
 }
