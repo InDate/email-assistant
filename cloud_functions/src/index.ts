@@ -89,7 +89,8 @@ export const ProcessMessage = async (event: Message, context: Context) => {
         let msgObj;
         try {
             msgObj = JSON.parse(message);
-        } catch (parseError) {
+        } catch (error) {
+            const parseError = error as Error;
             console.error('Failed to parse message:', message);
             console.error('Parse error:', parseError);
             throw new Error(`Invalid JSON message received: ${parseError.message}`);
@@ -111,7 +112,8 @@ export const ProcessMessage = async (event: Message, context: Context) => {
                     let prevMsgObj;
                     try {
                         prevMsgObj = JSON.parse(data.toString());
-                    } catch (historyParseError) {
+                    } catch (error) {
+                        const historyParseError = error as Error;
                         console.error('Failed to parse history file:', data.toString());
                         console.error('History parse error:', historyParseError);
                         throw new Error(`Invalid JSON in history file: ${historyParseError.message}`);
@@ -126,7 +128,8 @@ export const ProcessMessage = async (event: Message, context: Context) => {
             console.debug("Function execution completed");
         });
     }
-    catch(ex) {
+    catch(error) {
+        const ex = error as Error;
         // Log the full error details
         console.error('Error processing message:', {
             error: ex,
@@ -134,7 +137,7 @@ export const ProcessMessage = async (event: Message, context: Context) => {
             message: event.data?.toString('utf-8'),
             context: context
         });
-        throw new Error("Error occured while processing message: " + ex);   
+        throw new Error("Error occured while processing message: " + ex.message);   
     }
 };
 
