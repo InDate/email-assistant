@@ -65,6 +65,27 @@ export class GmailService {
     }
 
     /**
+ * Performs the Gmail API call to users.history.list Endpoint
+ *
+ * @param options Query parameters as per the Gmail API documentation
+ * @return {Promise<gmail_v1.Schema$ListHistoryResponse>} A Promise that resolves with the history data
+ * @see {@link https://developers.google.com/gmail/api/reference/rest/v1/users.history/list}
+ */
+    async getMessageList(
+    ): Promise<gmail_v1.Schema$ListHistoryResponse> {
+        try {
+            const response = await this.authenticatedClient.users.messages.list({
+                userId: this.watchAccount,
+                labelIds: ["UNREAD"]
+            });
+            return response.data;
+        } catch (ex) {
+            console.error("Message list error:", ex);
+            throw ex;
+        }
+    }
+
+    /**
      * Performs the Gmail API call to users.messages.get Endpoint
      *
      * @param messageId The message ID for which details (data) are required
@@ -76,7 +97,7 @@ export class GmailService {
     ): Promise<gmail_v1.Schema$Message> {
         try {
             const response = await this.authenticatedClient.users.messages.get({
-                userId: "me",
+                userId: this.watchAccount,
                 id: messageId,
             });
             return response.data;

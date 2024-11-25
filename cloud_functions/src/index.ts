@@ -1,5 +1,4 @@
 import { GmailService, StorageService } from "./shared";
-import { Message } from "@google-cloud/pubsub";
 
 import { type Context } from '@google-cloud/functions-framework'
 
@@ -71,9 +70,14 @@ const initConfig = async (): Promise<EnvConfig> => {
 };
 
 interface MessageObject {
-    emailId?: string;
+    emailAddress?: string;
     historyId: string;
-    timestamp: string;
+}
+
+interface PubSubEvent {
+    data: string;
+    message_id: string;
+    publish_time: string;
 }
 
 /**
@@ -83,13 +87,13 @@ interface MessageObject {
  * @param {Context} context The event metadata
  * @return {Promise} A Promise so the GCP function does not stop execution till the returned promise is resolved or gets rejected. 
  */
-export const ProcessMessage = async (event: Message, context: Context) => {
+export const ProcessMessage = async (event: PubSubEvent, context: Context) => {
     // Initialize configuration
     const config = await initConfig();
 
-    try 
-    {
-        const message = event.data.toString('utf-8');
+    try {
+        console.debug('Event message received:', event);
+        const message = Buffer.from(event.data, 'base64').toString('utf-8');
         console.debug('Raw message received:', message);
 
         let msgObj: MessageObject;
@@ -107,43 +111,32 @@ export const ProcessMessage = async (event: Message, context: Context) => {
             throw new Error('Message must be a JSON object');
         }
 
-        /* TO DO
-        - reading a JSON file each time is not going to scale well or save me money.
-        - see Pulumi.dev.yaml for file name.
-        - Rebuild after understanding its value.
-        */
-        return storageService.fileExist(config.ROOT_FOLDER + config.HISTORY_FILE_NAME).then(async function (exists) {
-            if (exists) {
-                await storageService.fetchFileContent(config.ROOT_FOLDER + config.HISTORY_FILE_NAME).then(async (data) => {
-                    let prevMsgObj;
-                    try {
-                        prevMsgObj = JSON.parse(data.toString());
-                    } catch (error) {
-                        const historyParseError = error as Error;
-                        console.error('Failed to parse history file:', data.toString());
-                        console.error('History parse error:', historyParseError);
-                        throw new Error(`Invalid JSON in history file: ${historyParseError.message}`);
-                    }
-                    await moveForward(prevMsgObj.historyId, msgObj);
-                });
-            }
-            else {
-                console.debug("History File Did not Exist");
-                await storageService.saveFileContent(config.ROOT_FOLDER + config.HISTORY_FILE_NAME, JSON.stringify(msgObj));
-            }
-            console.debug("Function execution completed");
-        });
-    }
-    catch(error) {
+        // Get the message data directly from Gmail API
+        console.time("getMessageData");
+        const msg = await gmailService.getMessageData(msgObj.historyId);
+        console.timeEnd("getMessageData");
+
+        if (!msg) {
+            console.error(`Message object was null: id: ${msgObj.historyId}`);
+            return;
+        }
+
+        // Process the email
+        console.time("processEmail");
+        await processEmail(msg, msgObj.historyId);
+        console.timeEnd("processEmail");
+
+        console.debug("Function execution completed");
+    } catch(error) {
         const ex = error as Error;
         // Log the full error details
         console.error('Error processing message:', {
             error: ex,
             stack: ex.stack,
-            message: event.data?.toString('utf-8'),
+            message: event.data?.toString(),
             context: context
         });
-        throw new Error("Error occured while processing message: " + ex.message);   
+        throw new Error("Error occurred while processing message: " + ex.message);   
     }
 };
 
@@ -190,17 +183,6 @@ export const StartWatch = async (message: any) => {
     }
 };
 
-
-/**
- * A helper function to further process the previous history id and save the current Message Object for the next run's previous history id
- *
- * @param {String} prevHistoryId Previous history id which will be queried for the latest messages
- * @param {Object} msgObj The current message object containing the new history id
- */
-async function moveForward(prevHistoryId: string, msgObj: MessageObject) {
-    storageService.saveFileContent(config.ROOT_FOLDER + config.HISTORY_FILE_NAME, JSON.stringify(msgObj));
-    await fetchMessageFromHistory(prevHistoryId);
-}
 
 /**
  * Fetches messages/updates starting from the given history ID, processes the updates, and identifies messages to send to the external webhook.
@@ -320,7 +302,7 @@ async function fetchMessageFromHistory(historyId: string): Promise<object> {
 async function processEmail(msg: any, messageId: string) {
     try {
 
-        const payload = msg.data.payload;
+        const payload = msg.payload;
         const headers = payload.headers; // array of header objects containing subject and from values.
         const parts = payload.parts; // array of content (different types, plain, html, etc.)
         const emailType = payload.mimeType; // Either multipart or plain text is supported
@@ -330,11 +312,11 @@ async function processEmail(msg: any, messageId: string) {
         }
         
         var email = {
-            id: msg.data.id,
+            id: msg.id,
             from: "",
             to: "",
             subject: "",
-            snippet: msg.data.snippet,
+            snippet: msg.snippet,
             bodyText: "",
             bodyHtml: ""
         };
@@ -394,7 +376,7 @@ async function processEmail(msg: any, messageId: string) {
 }
 
 async function sendReplyEmail(email:string) {
-    console.log("Sending Email...")
+    console.log("Sending Email..." + email);
 }
 
 /**

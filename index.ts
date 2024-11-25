@@ -65,6 +65,20 @@ const pubsubTopicEmail = new gcp.pubsub.Topic("gmailNewEmailTopic", {
     name: "email-assistant-new-email-topic",
 });
 
+// Dead Letter Queue topic for failed messages
+const deadLetterTopic = new gcp.pubsub.Topic("deadLetterTopic", {
+    name: "email-assistant-dlq-topic",
+});
+
+// Create a subscription with dead letter policy
+const emailSubscription = new gcp.pubsub.Subscription("emailSubscription", {
+    topic: pubsubTopicEmail.name,
+    deadLetterPolicy: {
+        deadLetterTopic: deadLetterTopic.id,
+        maxDeliveryAttempts: 5,
+    },
+});
+
 const topicIamMember = new gcp.pubsub.TopicIAMMember("gmailWatchTopicPublisher", {
     topic: pubsubTopicEmail.name,
     role: "roles/pubsub.publisher",
@@ -121,6 +135,13 @@ const contentBucket = new gcp.storage.Bucket("assistantContentBucket", {
     uniformBucketLevelAccess: true
 });
 
+// Grant Storage Object Viewer role to the Gmail service account
+const gmailStorageBinding = new gcp.storage.BucketIAMMember("gmailStorageBinding", {
+    bucket: contentBucket.name,
+    role: "roles/storage.objectViewer",
+    member: pulumi.interpolate`serviceAccount:${gmailServiceAccount.email}`,
+});
+
 // Factory function to create Gmail Cloud Functions
 const createGmailFunction = (
     name: string,
@@ -132,7 +153,7 @@ const createGmailFunction = (
         eventTrigger: {
             pubsubTopic: pubsubTopic,
             eventType: "google.cloud.pubsub.topic.v1.messagePublished",
-            retryPolicy: "RETRY_POLICY_DO_NOT_RETRY"
+            retryPolicy: "RETRY_POLICY_RETRY"
         },
         buildConfig: {
             runtime: 'nodejs22',
