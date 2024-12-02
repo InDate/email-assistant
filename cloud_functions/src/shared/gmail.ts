@@ -119,7 +119,8 @@ export class GmailService {
             requestBody: {
                 topicName: options.topicName,
                 labelIds: options.labelIds,
-                labelFilterAction: 'include'  // Default to include, can be made configurable if needed
+                labelFilterBehavior: "include",
+                labelFilterAction: "include"  // Default to include, can be made configurable if needed
             },
         });
         return response.data;

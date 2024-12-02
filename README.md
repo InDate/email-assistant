@@ -19,12 +19,17 @@ A TypeScript-based email assistant that uses Gmail API and Google Cloud Function
      - Other configuration values as needed
 
 4. Set up Google Cloud:
-   - Enable required APIs:
+   For new GCP projects, enable the following APIs:
+     - Cloud Scheduler API 
+     - Cloud Deploy API
      - Gmail API
-     - Cloud Functions
+     - Cloud Functions API
+     - Cloud Run Admin API
      - Cloud Pub/Sub
-   - Create a service account with necessary permissions
-   - Download service account key and encode it in base64
+     - Eventarc API
+     - Secrets Manager
+
+5. Configure Gmail workspace domain wide delegations, adding clientID. 
 
 5. Deploy:
    ```bash
@@ -57,5 +62,5 @@ MIT
 ## Useful Commands
 Publish a Topic to pubsub to test watch function
 ```bash
- gcloud pubsub topics publish email-assistant-watch-topic --message="Hello, Pub/Sub" --project <project_name>
+gcloud pubsub topics publish email-assistant-watch-topic --message="Hello, Pub/Sub" --project <project_name>
 ```
